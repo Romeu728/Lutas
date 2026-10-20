@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MK3 Style Fight - Animated</title>
+  <style>
+    :root{
+      --bg:#070b12;
+      --gold:#f7d76d;
+      --red:#ff5b5b;
+      --white:#edf3ff;
+      --line:rgba(255,255,255,.12);
+      --shadow:rgba(0,0,0,.55);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #1c2333 0%, #090d14 40%, #02060b 100%);
+      color: white;
+      font-family: Segoe UI, Tahoma, sans-serif;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #gameWrap {
+      position: relative;
+      width: min(100vw, 1120px);
+      height: min(100vh, 700px);
+      background: #070b12;
+      border: 2px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 28px rgba(0,0,0,.55), inset 0 0 30px rgba(255,255,255,.03);
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #0b1118;
+      image-rendering: pixelated;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    #hud {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #topHud {
+      position: absolute;
+      top: 18px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 18px;
+      padding: 0 18px;
+    }
+
+    .playerHud {
+      position: relative;
+      width: 38%;
+      min-width: 220px;
+      max-width: 380px;
+    }
+
+    .nameTag {
+      position: absolute;
+      top: 8px;
+      left: 18px;
+      right: 18px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-shadow: 2px 2px 0 rgba(0,0,0,.45);
+      z-index: 2;
+    }
+
+    .healthWrap {
+      position: relative;
+      width: 100%;
+      height: 30px;
+      margin-top: 18px;
+      background: rgba(17,21,31,.82);
+      border: 3px solid rgba(255,255,255,.18);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.25), 0 4px 0 rgba(0,0,0,.2);
+      overflow: hidden;
+    }
+
+    .healthFill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(90deg, #f7df72 0%, #efc42d 100%);
+      box-shadow: inset 0 0 12px rgba(255,255,255,.25);
+      transition: width .12s ease, background .15s ease;
+      z-index: 2;
+    }
+
+    .healthDamage {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(90deg, rgba(255,124,87,.95), rgba(214,20,20,.95));
+      opacity: .52;
+      z-index: 1;
+      transition: width .12s ease;
+    }
+
+    .healthFill.low {
+      background: linear-gradient(90deg, #ff8b77 0%, #ff3a3a 100%);
+    }
+
+    #centerHud {
+      position: absolute;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .timerBox {
+      min-width: 100px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      background: rgba(14,18,28,.82);
+      border: 3px solid rgba(255,255,255,.2);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.25);
+      color: #ffe99f;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 0 rgba(0,0,0,.45);
+    }
+
+    .roundText {
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: white;
+      text-shadow: 2px 2px 0 rgba(0,0,0,.45);
+    }
+
+    #banner {
+      position: absolute;
+      top: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(18px, 2.8vw, 34px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #fbe88d;
+      text-shadow: 4px 4px 0 rgba(0,0,0,.5), 0 0 18px rgba(247,215,109,.5);
+      opacity: 0;
+      white-space: nowrap;
+      transition: opacity .12s ease;
+    }
+
+    #banner.show { opacity: 1; }
+    #banner.finish { color: #ff7d7d; text-shadow: 4px 4px 0 rgba(0,0,0,.5), 0 0 20px rgba(255,94,94,.45); }
+    #banner.win { color: #fff8d6; text-shadow: 4px 4px 0 rgba(0,0,0,.5), 0 0 18px rgba(255,255,255,.5); }
+
+    #mobileControls {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      pointer-events: none;
+      display: none;
+    }
+
+    .touchButton {
+      position: absolute;
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      border: 2px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.18), 0 8px 12px rgba(0,0,0,.3);
+      color: white;
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-size: 12px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      pointer-events: auto;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .08s ease, border-color .08s ease, background .08s ease;
+    }
+
+    .touchButton:active,
+    .touchButton.active {
+      transform: scale(.94);
+      border-color: rgba(247,215,109,.9);
+      background: rgba(255,255,255,.15);
+    }
+
+    #dpad {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      width: 182px;
+      height: 182px;
+      pointer-events: none;
+    }
+
+    .dBtn {
+      position: absolute;
+      width: 62px;
+      height: 62px;
+      border-radius: 16px;
+      pointer-events: auto;
+      font-size: 22px;
+    }
+
+    .dBtn.left{ left: 18px; top: 50%; transform: translateY(-50%); }
+    .dBtn.right{ left: 118px; top: 50%; transform: translateY(-50%); }
+    .dBtn.up{ left: 50%; top: 18px; transform: translateX(-50%); }
+    .dBtn.down{ left: 50%; top: 118px; transform: translateX(-50%); }
+
+    #actionPad {
+      position: absolute;
+      right: 14px;
+      bottom: 18px;
+      width: 280px;
+      height: 185px;
+      pointer-events: none;
+    }
+
+    .action {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      pointer-events: auto;
+      font-size: 11px;
+      line-height: 1.1;
+    }
+
+    .a1 { right: 188px; bottom: 90px; }
+    .a2 { right: 96px; bottom: 90px; }
+    .a3 { right: 4px; bottom: 90px; }
+    .a4 { right: 206px; bottom: 2px; }
+    .a5 { right: 90px; bottom: 2px; }
+
+    .punch { background: rgba(255,94,94,.12); }
+    .kick { background: rgba(81,176,255,.12); }
+    .special { background: rgba(247,215,109,.14); }
+    .block { background: rgba(132,109,255,.14); }
+
+    @media (max-width: 820px) {
+      #mobileControls { display: block; }
+      #topHud { padding: 0 10px; }
+      .playerHud { min-width: 160px; }
+      .nameTag { left: 10px; right: 10px; font-size: 10px; letter-spacing: 2px; }
+      .timerBox { min-width: 74px; height: 42px; font-size: 22px; }
+      .roundText { font-size: 10px; letter-spacing: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameWrap">
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <div id="hud">
+      <div id="topHud">
+        <div class="playerHud">
+          <div class="nameTag" id="p1Name">SCORPION</div>
+          <div class="healthWrap">
+            <div class="healthDamage"></div>
+            <div class="healthFill" id="p1Health"></div>
+          </div>
+        </div>
+
+        <div id="centerHud">
+          <div class="timerBox" id="timerDisplay">99</div>
+          <div class="roundText" id="roundDisplay">ROUND 1</div>
+        </div>
+
+        <div class="playerHud">
+          <div class="nameTag" id="p2Name">SUB-ZERO</div>
+          <div class="healthWrap">
+            <div class="healthDamage"></div>
+            <div class="healthFill" id="p2Health"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="banner" class="show">FIGHT!</div>
+    </div>
+
+    <div id="mobileControls">
+      <div id="dpad">
+        <button class="touchButton dBtn left" data-control="left">◀</button>
+        <button class="touchButton dBtn right" data-control="right">▶</button>
+        <button class="touchButton dBtn up" data-control="jump">▲</button>
+        <button class="touchButton dBtn down" data-control="down">▼</button>
+      </div>
+
+      <div id="actionPad">
+        <button class="touchButton action punch a1" data-control="punch">PUNCH</button>
+        <button class="touchButton action kick a2" data-control="kick">KICK</button>
+        <button class="touchButton action special a3" data-control="special">FIRE</button>
+        <button class="touchButton action block a4" data-control="block">BLOCK</button>
+        <button class="touchButton action a5" data-control="crouch" style="background: rgba(255,255,255,.08);">CROUCH</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    const bannerEl = document.getElementById("banner");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const roundDisplay = document.getElementById("roundDisplay");
+    const p1HealthEl = document.getElementById("p1Health");
+    const p2HealthEl = document.getElementById("p2Health");
+    const p1NameEl = document.getElementById("p1Name");
+    const p2NameEl = document.getElementById("p2Name");
+
+    const FLOOR_Y = 430;
+    const LEFT_LIMIT = 110;
+    const RIGHT_LIMIT = 850;
+
+    const state = {
+      round: 1,
+      maxRounds: 2,
+      timer: 99,
+      phase: "fight",
+      winner: null,
+      particles: [],
+      projectiles: [],
+      shake: 0,
+      lastTime: 0,
+      bannerTime: 1.2,
+      roundWins: { p1: 0, p2: 0 },
+      transitionTimer: 0
+    };
+
+    const input = {
+      left: false,
+      right: false,
+      down: false,
+      block: false,
+      jump: false,
+      punch: false,
+      kick: false,
+      special: false,
+      crouch: false
+    };
+
+    function clamp(v, min, max) {
+      return Math.min(Math.max(v, min), max);
+    }
+
+    function makeFighter(id, x, name, colors) {
+      return {
+        id,
+        x,
+        y: FLOOR_Y,
+        vx: 0,
+        vy: 0,
+        w: 52,
+        h: 120,
+        health: 100,
+        facing: id === "p1" ? 1 : -1,
+        colorA: colors[0],
+        colorB: colors[1],
+        skin: colors[2],
+        onGround: true,
+        hitFlash: 0,
+        stun: 0,
+        attack: null,
+        specialCooldown: 0,
+        isBlocking: false,
+        isCrouching: false,
+        dead: false,
+        name,
+        ai: id === "p2",
+        walkCycle: 0
+      };
+    }
+
+    const fighters = [
+      makeFighter("p1", 220, "SCORPION", ["#f7d866", "#f08d38", "#f6e0b4"]),
+      makeFighter("p2", 740, "SUB-ZERO", ["#6fe2ff", "#4b9ef6", "#eaf9ff"])
+    ];
+
+    const player1 = fighters[0];
+    const player2 = fighters[1];
+
+    function setBanner(text, time = 1.2, kind = "normal") {
+      bannerEl.textContent = text;
+      bannerEl.className = "";
+      bannerEl.classList.add(kind === "finish" ? "finish" : kind === "win" ? "win" : "show");
+      state.bannerTime = time;
+    }
+
+    function updateHud() {
+      const p1Ratio = clamp(player1.health / 100, 0, 1);
+      const p2Ratio = clamp(player2.health / 100, 0, 1);
+
+      p1HealthEl.style.width = (p1Ratio * 100) + "%";
+      p2HealthEl.style.width = (p2Ratio * 100) + "%";
+
+      if (player1.health < 35) p1HealthEl.classList.add("low");
+      else p1HealthEl.classList.remove("low");
+
+      if (player2.health < 35) p2HealthEl.classList.add("low");
+      else p2HealthEl.classList.remove("low");
+
+      timerDisplay.textContent = Math.max(0, Math.ceil(state.timer));
+      roundDisplay.textContent = "ROUND " + state.round;
+    }
+
+    function resetRound() {
+      player1.x = 220; player1.y = FLOOR_Y; player1.vx = 0; player1.vy = 0; player1.health = 100; player1.dead = false; player1.attack = null; player1.stun = 0; player1.hitFlash = 0; player1.isBlocking = false; player1.isCrouching = false; player1.specialCooldown = 0; player1.onGround = true; player1.facing = 1; player1.walkCycle = 0;
+      player2.x = 740; player2.y = FLOOR_Y; player2.vx = 0; player2.vy = 0; player2.health = 100; player2.dead = false; player2.attack = null; player2.stun = 0; player2.hitFlash = 0; player2.isBlocking = false; player2.isCrouching = false; player2.specialCooldown = 0; player2.onGround = true; player2.facing = -1; player2.walkCycle = 0;
+
+      state.timer = 99;
+      state.phase = "fight";
+      state.winner = null;
+      state.particles = [];
+      state.projectiles = [];
+      state.shake = 0;
+
+      setBanner("FIGHT!", 1.2, "normal");
+      updateHud();
+    }
+
+    function finishRound(winnerId) {
+      if (state.phase === "matchOver") return;
+
+      if (winnerId === "p1") state.roundWins.p1++;
+      else if (winnerId === "p2") state.roundWins.p2++;
+
+      const totalWins = state.roundWins.p1 + state.roundWins.p2;
+
+      if (state.roundWins.p1 >= state.maxRounds || state.roundWins.p2 >= state.maxRounds) {
+        state.phase = "matchOver";
+        setBanner(winnerId === "p1" ? "PLAYER 1 WINS" : "PLAYER 2 WINS", 3.2, "win");
+        return;
+      }
+
+      state.phase = "transition";
+      state.transitionTimer = 2.2;
+      setBanner("ROUND " + (state.round + 1) + "!", 1.2, "normal");
+    }
+
+    function advanceToNextRound() {
+      if (state.round >= state.maxRounds) return;
+
+      state.round += 1;
+      state.phase = "fight";
+      resetRound();
+    }
+
+    function initAudio() {
+      if (!window.__audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        window.__audioCtx = new AudioCtx();
+      }
+      if (window.__audioCtx.state === "suspended") {
+        window.__audioCtx.resume();
+      }
+      return window.__audioCtx;
+    }
+
+    function playTone(freq, duration = 0.08, type = "triangle", gainVal = 0.06, slide = 0) {
+      const audio = initAudio();
+      if (!audio) return;
+
+      const osc = audio.createOscillator();
+      const gain = audio.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audio.currentTime);
+      if (slide) osc.frequency.linearRampToValueAtTime(freq + slide, audio.currentTime + duration);
+
+      gain.gain.setValueAtTime(0.0001, audio.currentTime);
+      gain.gain.exponentialRampToValueAtTime(gainVal, audio.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + duration);
+    }
+
+    function sfx(name) {
+      initAudio();
+      if (!window.__audioCtx) return;
+
+      switch (name) {
+        case "punch":
+          playTone(130, .08, "square", .06, 20);
+          break;
+        case "kick":
+          playTone(74, .1, "triangle", .07, 35);
+          break;
+        case "special":
+          playTone(180, .15, "sawtooth", .09, 110);
+          break;
+        case "impact":
+          playTone(96, .12, "square", .07, -12);
+          break;
+        case "victory":
+          playTone(240, .2, "triangle", .09, 40);
+          setTimeout(() => playTone(300, .22, "triangle", .08, 55), 90);
+          break;
+      }
+    }
+
+    function spawnParticles(x, y, count, color, blood = false) {
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const speed = (blood ? 190 : 150) + Math.random() * 120;
+        state.particles.push({
+          x, y,
+          vx: Math.cos(ang) * speed,
+          vy: Math.sin(ang) * speed - 40,
+          life: 0.45 + Math.random() * 0.6,
+          size: blood ? 2 + Math.random() * 4 : 2 + Math.random() * 5,
+          color
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      const next = [];
+      for (const p of state.particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 420 * dt;
+        p.life -= dt;
+        if (p.life > 0) next.push(p);
+      }
+      state.particles = next;
+    }
+
+    const attackDefs = {
+      jabHigh: { damage:7, range:48, width:26, height:22, start:0.08, end:0.17, duration:0.30, knock:250 },
+      jabLow:  { damage:6, range:44, width:24, height:18, start:0.08, end:0.16, duration:0.28, knock:220 },
+      kickHigh:{ damage:11, range:62, width:34, height:24, start:0.12, end:0.24, duration:0.42, knock:340 },
+      kickLow:{ damage:10, range:58, width:32, height:18, start:0.12, end:0.22, duration:0.40, knock:320 },
+      special:{ damage:18, range:30, width:18, height:18, start:0.10, end:0.55, duration:0.72, knock:420 }
+    };
+
+    function getHurtbox(fighter) {
+      return {
+        x: fighter.x - 24,
+        y: fighter.y - fighter.h + 18,
+        w: 48,
+        h: fighter.h - 14
+      };
+    }
+
+    function getAttackHitbox(fighter, atk) {
+      const dir = fighter.facing;
+      const x = fighter.x + dir * (fighter.w * 0.5 + atk.range);
+      const y = fighter.y - fighter.h + 24 + (fighter.isCrouching ? 22 : 0) + (atk.name && atk.name.includes("Low") ? 18 : 0);
+      return { x: x - atk.width / 2, y, w: atk.width, h: atk.height };
+    }
+
+    function rectsIntersect(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function applyDamage(attacker, defender, amount, knock, stunTime, blockable = true) {
+      if (defender.dead) return;
+
+      const blocked = blockable && defender.isBlocking && ((attacker.x < defender.x && defender.facing === 1) || (attacker.x > defender.x && defender.facing === -1));
+
+      let dmg = amount;
+      let kb = knock;
+      let stun = stunTime;
+
+      if (blocked) {
+        dmg *= 0.35;
+        kb *= 0.45;
+        stun *= 0.5;
+        sfx("impact");
+        spawnParticles(defender.x, defender.y - 60, 10, "#85e6ff");
+      } else {
+        sfx("impact");
+        spawnParticles(defender.x, defender.y - 60, 18, "#ff5d5d", true);
+      }
+
+      defender.health = clamp(defender.health - dmg, 0, 100);
+      defender.stun = stun;
+      defender.hitFlash = 0.22;
+      const dir = attacker.x < defender.x ? 1 : -1;
+      defender.vx = dir * kb;
+      defender.vy = blocked ? -110 : -220;
+      defender.onGround = false;
+      state.shake = Math.max(state.shake, blocked ? 5 : 10);
+
+      if (defender.health <= 0) {
+        defender.dead = true;
+        defender.health = 0;
+        state.phase = "transition";
+        state.transitionTimer = 1.8;
+        finishRound(attacker.id);
+      } else if (defender.health <= 25) {
+        setBanner("FINISH HIM!", 0.7, "finish");
+      }
+
+      updateHud();
+    }
+
+    function startAttack(fighter, kind) {
+      if (fighter.dead || fighter.stun > 0.01 || fighter.attack) return;
+      if (kind === "special" && fighter.specialCooldown > 0) return;
+
+      if (kind === "special") {
+        fighter.specialCooldown = 1.5;
+        fighter.attack = { kind, timer: 0, duration: attackDefs.special.duration, hit: false, projSpawned: false };
+        sfx("special");
+        return;
+      }
+
+      fighter.attack = { kind, timer: 0, duration: attackDefs[kind].duration, hit: false };
+      sfx(kind.includes("kick") ? "kick" : "punch");
+    }
+
+    function updateFight(fighter, opponent, dt, human) {
+      if (fighter.dead) return;
+
+      fighter.hitFlash = Math.max(0, fighter.hitFlash - dt * 2.4);
+      if (fighter.stun > 0) fighter.stun = Math.max(0, fighter.stun - dt);
+
+      if (!fighter.onGround) {
+        fighter.vy += 1650 * dt;
+        fighter.y += fighter.vy * dt;
+        if (fighter.y >= FLOOR_Y) {
+          fight
